@@ -106,29 +106,51 @@ export function SlideBuilder() {
     return currentIndex >= startIndex && currentIndex <= endIndex;
   };
 
-  // Load Bibles on mount
+// Load Bibles on mount
   useEffect(() => {
     const loadBibles = async () => {
       try {
         const loadedBibles: BibleTranslation[] = [];
         
-        // Fetch known bibles from the public folder
-        const bibleFiles = ['KJV.xml'];
+        // Updated list to include all your uploaded translations
+        const bibleFiles = [
+          'NIV.xml', 
+          'ESV.xml', 
+          'KJV.xml', 
+          'NLT.xml', 
+          'NKJV.xml', 
+          'NASB.xml', 
+          'CSB.xml', 
+          'MSG.xml', 
+          'NRSV.xml'
+        ];
         
         for (const file of bibleFiles) {
           const name = file.replace('.xml', '');
+          // Make sure your files are in the /public/bibles/ folder
           const response = await fetch(`/bibles/${file}`);
+          
           if (response.ok) {
             const xmlString = await response.text();
-            loadedBibles.push(parseXMLBible(xmlString, name));
+            try {
+              const parsed = parseXMLBible(xmlString, name);
+              loadedBibles.push(parsed);
+            } catch (parseError) {
+              console.error(`Error parsing ${file}:`, parseError);
+            }
+          } else {
+            console.warn(`Could not find Bible file: ${file} at /bibles/`);
           }
         }
         
-        setBibles(loadedBibles);
         if (loadedBibles.length > 0) {
-          setSelectedBible(loadedBibles[0].name);
-          if (loadedBibles[0].books.length > 0) {
-            setSelectedBook(loadedBibles[0].books[0].bname);
+          setBibles(loadedBibles);
+          // Set a default (ESV or NIV are usually best for church defaults)
+          const defaultBible = loadedBibles.find(b => b.name === "ESV") || loadedBibles[0];
+          setSelectedBible(defaultBible.name);
+          
+          if (defaultBible.books.length > 0) {
+            setSelectedBook(defaultBible.books[0].bname);
           }
         }
       } catch (err) {
